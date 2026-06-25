@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: ticket-classifier-api
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node src/server.js
+    envVars:
+      - key: GEMINI_API_KEY
+        scope: build,runtime
+        sync: false
+      - key: NODE_ENV
+        value: production
