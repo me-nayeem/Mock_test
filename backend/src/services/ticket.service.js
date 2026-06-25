@@ -142,6 +142,19 @@ function calculateCombinedConfidence(geminiScore, rulesScore) {
   return Math.round(combined * 100) / 100;
 }
 
+// ========== NEW FUNCTION: Clean forbidden terms from agent_summary ==========
+function cleanAgentSummary(summary) {
+  const forbiddenTerms = ['otp', 'pin', 'password', 'cvv', 'card number', 'full card'];
+  let cleaned = summary;
+
+  forbiddenTerms.forEach((term) => {
+    const regex = new RegExp(`\\b${term}\\b`, 'gi');
+    cleaned = cleaned.replace(regex, 'sensitive information');
+  });
+
+  return cleaned;
+}
+
 function validateAgentSummary(summary) {
   const forbidden = ['pin', 'otp', 'password', 'card number', 'cvv', 'full card'];
   const summaryLower = summary.toLowerCase();
@@ -217,6 +230,20 @@ export async function classifyTicket(ticketData) {
     geminiResponse.severity = 'medium';
   }
 
+  // ========== FIX 1: ENFORCE SEVERITY RULES ==========
+  // Phishing/social engineering MUST be critical
+  if (geminiResponse.case_type === 'phishing_or_social_engineering') {
+    geminiResponse.severity = 'critical';
+  }
+
+  // Technical issues (other) MUST be low
+  if (geminiResponse.case_type === 'other') {
+    geminiResponse.severity = 'low';
+  }
+
+  // ========== FIX 2: CLEAN FORBIDDEN TERMS FROM SUMMARY ==========
+  geminiResponse.agent_summary = cleanAgentSummary(geminiResponse.agent_summary);
+
   if (!validateAgentSummary(geminiResponse.agent_summary)) {
     geminiResponse.agent_summary =
       'Ticket requires human review for sensitive information handling.';
@@ -230,7 +257,6 @@ export async function classifyTicket(ticketData) {
 
   const human_review_required =
     geminiResponse.severity === 'critical' ||
-    geminiResponse.severity === 'high' ||
     geminiResponse.case_type === 'phishing_or_social_engineering' ||
     confidence < 0.6;
 
