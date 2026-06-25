@@ -142,7 +142,6 @@ function calculateCombinedConfidence(geminiScore, rulesScore) {
   return Math.round(combined * 100) / 100;
 }
 
-// ========== NEW FUNCTION: Clean forbidden terms from agent_summary ==========
 function cleanAgentSummary(summary) {
   const forbiddenTerms = ['otp', 'pin', 'password', 'cvv', 'card number', 'full card'];
   let cleaned = summary;
@@ -230,18 +229,14 @@ export async function classifyTicket(ticketData) {
     geminiResponse.severity = 'medium';
   }
 
-  // ========== FIX 1: ENFORCE SEVERITY RULES ==========
-  // Phishing/social engineering MUST be critical
   if (geminiResponse.case_type === 'phishing_or_social_engineering') {
     geminiResponse.severity = 'critical';
   }
 
-  // Technical issues (other) MUST be low
   if (geminiResponse.case_type === 'other') {
     geminiResponse.severity = 'low';
   }
 
-  // ========== FIX 2: CLEAN FORBIDDEN TERMS FROM SUMMARY ==========
   geminiResponse.agent_summary = cleanAgentSummary(geminiResponse.agent_summary);
 
   if (!validateAgentSummary(geminiResponse.agent_summary)) {
