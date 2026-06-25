@@ -1,3 +1,8 @@
 .env
 node_modules
 .puku
+coverage
+*.log
+npm-debug.log*
+.prettierignore
+.prettierrc
